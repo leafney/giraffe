@@ -211,3 +211,13 @@ func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error
 		}
 	}
 }
+
+// 断开连接
+func (c *Consumer) Close() {
+	if c.channel != nil {
+		c.channel.Close()
+	}
+	if c.conn != nil {
+		c.conn.Close()
+	}
+}

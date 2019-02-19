@@ -1,11 +1,11 @@
 package consumer
 
 import (
-"errors"
-"fmt"
-"github.com/15125505/zlog/log"
-"github.com/streadway/amqp"
-"time"
+	"errors"
+	"fmt"
+	"github.com/15125505/zlog/log"
+	"github.com/streadway/amqp"
+	"time"
 )
 
 /*
@@ -152,24 +152,24 @@ func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, 
 
 		//	go into reconnect loop when c.done is passed non nil values
 		if <-c.closeErr != nil {
-			var m=1
+			var m = 1
 			for {
 				d, err = c.ReConnect(c.queueName, c.bingdingKey)
 				if err != nil {
-					if m<6{
+					if m < 6 {
 						// 连接失败，有三次 60s 180s 300s 间隔的重试。之后如果仍然链接失败，则等待10分钟
-						t:=60*m
+						t := 60 * m
+						log.Error(fmt.Sprintf("Reconnecting Error and after %d s retry...", t))
 						time.Sleep(time.Duration(t) * time.Second)
-						log.Error(fmt.Sprintf("Reconnecting Error and after %d s retry...",t))
-					}else{
+					} else {
 						log.Error(fmt.Sprintf("Reconnecting Error: %s", err))
 						// 这里重连失败，直接return，调用外面的重连机制
 						return
 					}
-				}else{
+				} else {
 					break
 				}
-				m=m+2
+				m = m + 2
 			}
 		}
 		// 到这里肯定是重连成功了

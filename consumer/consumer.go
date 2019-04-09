@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/15125505/zlog/log"
+	"github.com/Leafney/giraffe/utils"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -137,7 +138,12 @@ func (c *Consumer) AnnounceQueue(queueName, bindingKey string) (<-chan amqp.Deli
 }
 
 // 处理消息
-func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, threads int) {
+// d: 接收到的消息内容
+// fn: 处理消息的方法
+// threads: 限定处理消息的协程数
+// delayAck: 消息处理完成后是否延迟ack,延迟时间随机在 0~~delayMaxSec 之间
+// delayMaxSec: 消息延迟最大秒数
+func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, threads int, delayAck bool, delayMaxSec int) {
 	if c.queueName == "" || c.bingdingKey == "" {
 		log.Error("must set queueName and bindingKey")
 		panic("must set queueName and bindingKey") // Todo 修改成默认值
@@ -147,7 +153,7 @@ func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, 
 	for {
 		// multiple goroutine
 		for i := 0; i < threads; i++ {
-			go handleLoop(d, fn, c.autoAck)
+			go handleLoop(d, fn, c.autoAck, delayAck, delayMaxSec)
 		}
 
 		//	go into reconnect loop when c.done is passed non nil values
@@ -193,7 +199,7 @@ func (c *Consumer) ReConnect(queueName, bindingKey string) (<-chan amqp.Delivery
 }
 
 // 处理
-func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error, autoAck bool) {
+func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error, autoAck bool, delayAck bool, delayMaxSec int) {
 	for d := range msgs {
 		// 对返回结果执行相应操作
 		err := handlerFunc(d)
@@ -203,9 +209,16 @@ func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error
 			// 不自动确认，等待处理成功后再确认
 			// ack on success
 			if err == nil {
+				//在ack之前设置等待时间，起到消峰限流的效果
+				if delayAck {
+					sec := utils.GetRandInt(delayMaxSec)
+					log.Info(fmt.Sprintf("消息回复确认前等待 %d 秒", sec))
+					time.Sleep(time.Second * time.Duration(sec))
+				}
 				// 确认收到本条消息, multiple必须为false
 				d.Ack(false)
 			} else {
+				// Todo Nack容易导致消息出错，重新返回队列中，下一次处理仍出错，又会被返回队列中而先陷入死循环
 				d.Nack(false, true)
 			}
 		}

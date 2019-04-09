@@ -10,7 +10,7 @@ import (
 var pub *publisher.Publisher
 
 // 初始化
-func InitConnect(uri, consumerTag, exchangeName, exchangeType string, durable, autoAck bool) {
+func InitConnect(uri, consumerTag, exchangeName, exchangeType string, durable bool) {
 	// 通过defer recover 来恢复panic异常
 	defer func() {
 		if err := recover(); err != nil {
@@ -19,7 +19,7 @@ func InitConnect(uri, consumerTag, exchangeName, exchangeType string, durable, a
 	}()
 	//Todo 从配置文件中获取MQ配置信息
 	pub = publisher.NewPublisher(
-		uri, consumerTag, exchangeName, exchangeType, durable, autoAck,
+		uri, consumerTag, exchangeName, exchangeType, durable,
 	)
 
 	if err := pub.Connect(); err != nil {

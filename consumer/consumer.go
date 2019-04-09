@@ -141,9 +141,8 @@ func (c *Consumer) AnnounceQueue(queueName, bindingKey string) (<-chan amqp.Deli
 // d: 接收到的消息内容
 // fn: 处理消息的方法
 // threads: 限定处理消息的协程数
-// delayAck: 消息处理完成后是否延迟ack,延迟时间随机在 0~~delayMaxSec 之间
-// delayMaxSec: 消息延迟最大秒数
-func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, threads int, delayAck bool, delayMaxSec int) {
+// delayMaxSec: 消息处理完成后是否延迟ack,延迟时间随机在 1~~delayMaxSec 之间,0表示不延迟ack
+func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, threads int, delayMaxSec int) {
 	if c.queueName == "" || c.bingdingKey == "" {
 		log.Error("must set queueName and bindingKey")
 		panic("must set queueName and bindingKey") // Todo 修改成默认值
@@ -153,7 +152,7 @@ func (c *Consumer) Handle(d <-chan amqp.Delivery, fn func(amqp.Delivery) error, 
 	for {
 		// multiple goroutine
 		for i := 0; i < threads; i++ {
-			go handleLoop(d, fn, c.autoAck, delayAck, delayMaxSec)
+			go handleLoop(d, fn, c.autoAck, delayMaxSec)
 		}
 
 		//	go into reconnect loop when c.done is passed non nil values
@@ -193,13 +192,13 @@ func (c *Consumer) ReConnect(queueName, bindingKey string) (<-chan amqp.Delivery
 	}
 	deliveries, err := c.AnnounceQueue(queueName, bindingKey)
 	if err != nil {
-		return deliveries, errors.New("Couldn't connect")
+		return deliveries, errors.New("Could not connect")
 	}
 	return deliveries, nil
 }
 
 // 处理
-func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error, autoAck bool, delayAck bool, delayMaxSec int) {
+func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error, autoAck bool, delayMaxSec int) {
 	for d := range msgs {
 		// 对返回结果执行相应操作
 		err := handlerFunc(d)
@@ -210,9 +209,9 @@ func handleLoop(msgs <-chan amqp.Delivery, handlerFunc func(amqp.Delivery) error
 			// ack on success
 			if err == nil {
 				//在ack之前设置等待时间，起到消峰限流的效果
-				if delayAck {
+				if delayMaxSec > 0 {
 					sec := utils.GetRandInt(delayMaxSec)
-					log.Info(fmt.Sprintf("消息回复确认前等待 %d 秒", sec))
+					log.Info(fmt.Sprintf("Sleep for %d seconds before delivery acknowledgement.", sec))
 					time.Sleep(time.Second * time.Duration(sec))
 				}
 				// 确认收到本条消息, multiple必须为false

@@ -11,27 +11,27 @@ import (
 type Publisher struct {
 	conn         *amqp.Connection
 	channel      *amqp.Channel
-	amqpURI      string     // amqp连接地址
-	exchangeName string     // 交换器名称
-	exchangeType string     // 交换器支持的类型
-	durable      bool       // 消息是否持久化
-	consumerTag  string     // client名称
-	autoAck      bool       // 是否自动确认
-	closeErr     chan error // 关闭异常
-	queueName    string     // 队列名称
-	routingKey   string     // 路由键
+	amqpURI      string // amqp连接地址
+	exchangeName string // 交换器名称
+	exchangeType string // 交换器支持的类型
+	durable      bool   // 消息是否持久化
+	consumerTag  string // client名称
+	//autoAck      bool       // 是否自动确认 //Todo 发现 publisher中不需要autoack参数，需要查询一下是否有问题
+	closeErr   chan error // 关闭异常
+	queueName  string     // 队列名称
+	routingKey string     // 路由键
 }
 
 // 初始化
-func NewPublisher(uri, consumerTag, exchangeName, exchangeType string, durable bool, autoAck bool) *Publisher {
+func NewPublisher(uri, consumerTag, exchangeName, exchangeType string, durable bool) *Publisher {
 	return &Publisher{
 		amqpURI:      uri,
 		exchangeName: exchangeName,
 		exchangeType: exchangeType,
 		durable:      durable,
 		consumerTag:  consumerTag,
-		autoAck:      autoAck,
-		closeErr:     make(chan error),
+		//autoAck:      autoAck,
+		closeErr: make(chan error),
 	}
 }
 

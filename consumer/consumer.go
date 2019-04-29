@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/15125505/zlog/log"
-	"github.com/Leafney/giraffe/utils"
+	"github.com/leafney/giraffe/utils"
 	"github.com/streadway/amqp"
 	"time"
 )

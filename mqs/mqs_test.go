@@ -31,7 +31,6 @@ func TestM(t *testing.T) {
 			"",
 			"direct",
 			true,
-			true,
 		)
 		t.Log("MQ连接异常，10分钟后将自动重连...")
 		time.Sleep(10 * time.Minute) // 暂停10分钟后再重试

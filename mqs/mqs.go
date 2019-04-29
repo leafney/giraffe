@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/15125505/zlog/log"
-	"github.com/Leafney/giraffe/publisher"
+	"github.com/leafney/giraffe/publisher"
 )
 
 var pub *publisher.Publisher
